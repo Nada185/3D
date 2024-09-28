@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Example</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .control-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .control-button:hover {
+            background-color: #0056b3;
+        }
+        .camera-coordinates {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button class="control-button" id="north">N</button>
+        <button class="control-button" id="south">S</button>
+        <button class="control-button" id="east">E</button>
+        <button class="control-button" id="west">W</button>
+    </div>
+    <div class="camera-coordinates" id="cameraCoordinates">Coordinates: (0, 0, 0)</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // إعداد المشهد
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xffffff, 1); // تعيين خلفية بيضاء
+        document.body.appendChild(renderer.domElement);
+
+        // إضافة إضاءة أمامية
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(0, 1, 2).normalize();
+        scene.add(light);
+
+        // إضافة إضاءة بيئية
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // تحميل نموذج GLTF عند الإحداثيات (0, 0, 0)
+        const loader = new THREE.GLTFLoader();
+        loader.load('model.gltf', function (gltf) {
+            // تعيين موضع النموذج عند (0, 0, 0)
+            gltf.scene.position.set(0, 0, 0);
+            scene.add(gltf.scene);
+            console.log('Model loaded successfully!');
+        }, undefined, function (error) {
+            console.error('Error loading model:', error);
+        });
+
+        // إعداد الكاميرا لتوجيهها نحو الواجهة الجنوبية
+        camera.position.set(0, -30, 20); // تعيين موضع الكاميرا
+        camera.lookAt(0, 0, 0); // توجيه الكاميرا نحو المركز
+
+        // التحكم في العرض
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        controls.screenSpacePanning = false;
+
+        // وظائف لتوجيه الكاميرا
+        function moveToDirection(x, y, z) {
+            new TWEEN.Tween(camera.position)
+                .to({ x: x, y: y, z: z }, 1000)
+                .onUpdate(function () {
+                    camera.lookAt(0, 0, 0);
+                })
+                .start();
+        }
+
+        // تعيين إحداثيات الاتجاهات
+        document.getElementById('north').onclick = function () { moveToDirection(0, 60, -5); }; // واجهة شمالية
+        document.getElementById('south').onclick = function () { moveToDirection(0, -30, 20); }; // واجهة جنوبية
+        document.getElementById('east').onclick = function () { moveToDirection(-50, 0, -50); }; // واجهة شرقية عمودية
+        document.getElementById('west').onclick = function () { moveToDirection(50,0, -50); }; // واجهة غربية عمودية
+
+        // تحديث المشهد
+        const animate = function () {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+            TWEEN.update(); // تحديث التحركات
+            
+            // تحديث إحداثيات الكاميرا
+            document.getElementById('cameraCoordinates').innerText = `Coordinates: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`;
+        };
+
+        animate();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</body>
+</html>
